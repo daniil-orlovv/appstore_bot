@@ -7,9 +7,9 @@ from sqlalchemy.pool import QueuePool
 from models.models import Base
 from handlers import user_handlers, admin_handlers
 from config_data.config import Config, load_config
+from middlewares.middleware import DBMiddleware
 
 logger = logging.getLogger(__name__)
-
 
 
 async def main():
@@ -25,9 +25,12 @@ async def main():
         )
         Base.metadata.create_all(db)
         dp = Dispatcher()
-        dp.workflow_data.update({'db': db})
+        dp.workflow_data.update({'db': db, 'config': config})
+
         dp.include_router(admin_handlers.router)
         dp.include_router(user_handlers.router)
+
+        dp.update.outer_middleware(DBMiddleware())
 
         await bot.delete_webhook(drop_pending_updates=True)
         await dp.start_polling(bot)
