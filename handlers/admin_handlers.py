@@ -1,9 +1,8 @@
 from aiogram.filters import Command
 from aiogram import Router
 from aiogram.types import Message, CallbackQuery
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Engine
-from aiogram.filters import StateFilter, CommandStart
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 
@@ -38,7 +37,7 @@ async def add(message: Message, session: Engine):
 async def remove(message: Message, session: Engine, state: FSMContext):
     '''Удаляет URL приложения для мониторинга.'''
 
-    all_apps = session.query(App.id, App.title).all()  # Получение всех приложений
+    all_apps = session.query(App.id, App.title).all()
     names_apps = [x[-1] for x in all_apps]
     await state.update_data(names_apps=names_apps)
     adjust = [2, 2, 2, 2]
@@ -54,7 +53,11 @@ async def remove(message: Message, session: Engine, state: FSMContext):
 
 
 @router.callback_query(StateFilter(RemoveAppFSM.choosing_app), CheckApps())
-async def accept_remove(callback: CallbackQuery, session: Engine, state: FSMContext):
+async def accept_remove(
+    callback: CallbackQuery,
+    session: Engine,
+    state: FSMContext
+):
     '''Удаляет URL приложения для мониторинга.'''
 
     name_app = callback.data
@@ -69,7 +72,8 @@ async def set_interval(message: Message, config):
 
     value = message.text.split()[1]
     config.update_interval(value)
-    await message.answer(f'Интервал времени для проверки установлен: {value} минут')
+    await message.answer(
+        f'Интервал времени для проверки установлен: {value} минут')
     print(config.interval_value.minutes)
 
 
