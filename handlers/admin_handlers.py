@@ -1,44 +1,66 @@
 from aiogram.filters import Command
 from aiogram import Router
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Engine
+from aiogram.filters import StateFilter, CommandStart
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import default_state
 
-from utils.utils_db import create_app_for_db
+from utils.utils_db import (add_app_to_db, add_key_to_db, remove_from_db,
+                            check_unique_app, check_key_access)
 from models.models import App
+from middlewares.middleware import DBMiddleware
+from keyboards.keyboards_builder import create_inline_kb
+from states.states import RemoveAppFSM
+from filters.filters import CheckApps
 
 router = Router()
+router.message.outer_middleware(DBMiddleware())
 
 
-@router.message(Command(commands='add'))
-async def add(message: Message, db):
+@router.message(StateFilter(default_state), Command(commands='add'))
+async def add(message: Message, session: Engine):
     '''Добавляет URL приложения для мониторинга.'''
 
-    cmd, url, title, launch_url = message.text.split()
-    data = {
-        'title': title, 'url': url, 'launch_url': launch_url}
-    print(data)
+    url, title, launch_url = message.text.split()[1:]
+    data = {'title': title, 'url': url, 'launch_url': launch_url}
 
-    connection = db.connect()
-    Session = sessionmaker(bind=db)
-    session = Session(bind=connection)
-    object_for_db = create_app_for_db(data)
-    session.add(object_for_db)
-    session.commit()
-
-    await message.answer(f"Приложение {title} добавлено для мониторинга.")
+    if check_unique_app(session, data) is True:
+        add_app_to_db(session, data)
+        await message.answer(f"Приложение {title} добавлено для мониторинга.")
+    else:
+        await message.answer(
+            'Такое приложение уже существует!')
 
 
-@router.message(Command('remove'))
-async def remove(message: Message, db):
+@router.message(StateFilter(default_state), Command('remove'))
+async def remove(message: Message, session: Engine, state: FSMContext):
     '''Удаляет URL приложения для мониторинга.'''
 
-    connection = db.connect()
-    Session = sessionmaker(bind=db)
-    session = Session(bind=connection)
-    print(session.query(App.id, App.title).all())  # Получение всех приложений
-    i = session.query(App).filter(App.title == 'Название').one()  # Удаление выбранного приложения
-    session.delete(i)
-    session.commit()
+    all_apps = session.query(App.id, App.title).all()  # Получение всех приложений
+    names_apps = [x[-1] for x in all_apps]
+    await state.update_data(names_apps=names_apps)
+    adjust = [2, 2, 2, 2]
+    inline_keyboard = create_inline_kb(adjust, *names_apps)
+    if all_apps:
+        await message.answer(
+            text='Какое приложение необходимо удалить?',
+            reply_markup=inline_keyboard)
+        await state.set_state(RemoveAppFSM.choosing_app)
+    else:
+        await message.answer('Приложений для мониторинга нет!')
+        await state.clear()
+
+
+@router.callback_query(StateFilter(RemoveAppFSM.choosing_app), CheckApps())
+async def accept_remove(callback: CallbackQuery, session: Engine, state: FSMContext):
+    '''Удаляет URL приложения для мониторинга.'''
+
+    name_app = callback.data
+    remove_from_db(session, name_app)
+    await callback.message.edit_text(text=f'Приложение {name_app} удалено!')
+    await state.clear()
 
 
 @router.message(Command('setinterval'))
@@ -52,10 +74,15 @@ async def set_interval(message: Message, config):
 
 
 @router.message(Command('generatekey'))
-async def generate_key(message: Message):
+async def generate_key(message: Message, session: Engine):
     '''Генерирует ключ доступа для пользователей.'''
 
-    pass
+    key_access = message.text.split()[1:]
+    if check_key_access(session, *key_access) is True:
+        add_key_to_db(session, *key_access)
+        await message.answer(f'Ключ доступа создан: {key_access}')
+    else:
+        await message.answer('Такой ключ уже создан!')
 
 
 @router.message(Command('broadcast'))
