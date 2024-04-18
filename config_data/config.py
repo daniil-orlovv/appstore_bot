@@ -1,9 +1,7 @@
-import os
 from typing import Union
 
 from dataclasses import dataclass
 from environs import Env
-from aiogram import types
 
 
 @dataclass
