@@ -6,7 +6,8 @@ from environs import Env
 
 @dataclass
 class TgBot:
-    token: str            # Токен для доступа к телеграм-боту
+    token: str
+    admin_ids: list[int]
 
 
 @dataclass
@@ -29,6 +30,7 @@ def load_config(path: Union[str, None] = None) -> Config:
     return Config(
         tg_bot=TgBot(
             token=env('BOT_TOKEN'),
+            admin_ids=list(map(int, env.list('ADMIN_IDS')))
         ),
         interval_value=CheckingInterval(
             minutes=env('INTERVAL_MINUTES')
