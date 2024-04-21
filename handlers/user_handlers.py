@@ -24,7 +24,7 @@ async def start(message: Message, session: Engine):
             id_telegram = message.from_user.id
             name = message.from_user.first_name
             data = {'id_telegram': id_telegram, 'name': name}
-            if not check_exist_user:
+            if not check_exist_user(session, id_telegram):
                 add_user_to_db(session, data)
             await message.answer('Доступ получен.')
             remove_key_from_db(session, key)
