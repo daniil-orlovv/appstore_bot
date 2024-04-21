@@ -1,17 +1,40 @@
 from aiogram.filters import CommandStart, Command
 from aiogram import Router
 from aiogram.types import Message
+from sqlalchemy import Engine
+
+from utils.utils_db import (check_access_for_user, check_exist_user,
+                            add_user_to_db, remove_key_from_db)
 
 
 router = Router()
 
 
 @router.message(CommandStart())
-async def start(message: Message):
+async def start(message: Message, session: Engine):
     '''Проверяет ключ пользователя и разрешает/запрещает доступ.'''
 
-    # key_for_start = message.get_args()
-    await message.answer('Вы вызвали команду /start')
+    try:
+        cmd, key = message.text.split()
+        if not key:
+            await message.answer('Для доступа к боту необходимо указать ключ, '
+                                 'который необходимо получить у '
+                                 'администратора')
+        if check_access_for_user(session, key):
+            id_telegram = message.from_user.id
+            name = message.from_user.first_name
+            data = {'id_telegram': id_telegram, 'name': name}
+            if not check_exist_user:
+                add_user_to_db(session, data)
+            await message.answer('Доступ получен.')
+            remove_key_from_db(session, key)
+        else:
+            await message.answer('Введен неверный ключ доступа! '
+                                 'Обратитесь к администратору.')
+    except ValueError:
+        await message.answer('Необходимо указать ключ доступа через пробел '
+                             'после команды:'
+                             '\n\n<code>/start *значение*</code>')
 
 
 @router.message(Command('status'))
