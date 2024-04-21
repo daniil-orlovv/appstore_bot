@@ -2,6 +2,8 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
 from models.models import Base
@@ -16,7 +18,9 @@ async def main():
     try:
         logger.info('Starting bot')
         config: Config = load_config()
-        bot = Bot(token=config.tg_bot.token)
+        bot = Bot(
+            token=config.tg_bot.token,
+            default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         db = create_engine(
             'sqlite:///sqlite3.db',
             poolclass=QueuePool,
@@ -25,7 +29,7 @@ async def main():
         )
         Base.metadata.create_all(db)
         dp = Dispatcher()
-        dp.workflow_data.update({'db': db, 'config': config})
+        dp.workflow_data.update({'db': db, 'bot': bot, 'config': config})
 
         dp.include_router(admin_handlers.router)
         dp.include_router(user_handlers.router)
