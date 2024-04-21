@@ -1,13 +1,14 @@
 from aiogram.filters import Command
-from aiogram import Router
+from aiogram import Router, Dispatcher
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy import Engine
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 
-from utils.utils_db import (add_app_to_db, add_key_to_db, remove_from_db,
-                            check_exist_app, check_key_access)
+from utils.utils_db import (add_app_to_db, add_key_to_db, remove_app_from_db,
+                            check_exist_app, check_exist_key,
+                            get_ids_users_from_db)
 from models.models import App
 from keyboards.keyboards_builder import create_inline_kb
 from states.states import RemoveAppFSM
@@ -30,12 +31,11 @@ async def add(message: Message, session: Engine):
                 f"Приложение {title} добавлено для мониторинга.")
         else:
             await message.answer(
-                f'Такое приложение уже существует!')
+                'Такое приложение уже существует!')
     except ValueError:
         await message.answer('Необходимо указать url, название и ссылку для '
                              'запуска через пробел после команды: \n\n'
                              '<code>/add url title launch_url</code>')
-
 
 
 @router.message(StateFilter(default_state), Command('remove'))
@@ -66,7 +66,7 @@ async def accept_remove(
     '''Подтверждение удаления.'''
 
     name_app = callback.data
-    remove_from_db(session, name_app)
+    remove_app_from_db(session, name_app)
     await callback.message.edit_text(text=f'Приложение {name_app} удалено!')
     await state.clear()
 
@@ -92,8 +92,7 @@ async def generate_key(message: Message, session: Engine):
 
     try:
         cmd, key_access = message.text.split()
-
-        if check_key_access(session, key_access) is True:
+        if check_exist_key(session, key_access) is True:
             add_key_to_db(session, key_access)
             await message.answer(f'Ключ доступа создан: {key_access}')
         else:
@@ -105,7 +104,15 @@ async def generate_key(message: Message, session: Engine):
 
 
 @router.message(Command('broadcast'))
-async def broadcast(message: Message):
+async def broadcast(message: Message, session: Engine, bot):
     '''Отправляет сообщение всем пользователям.'''
 
-    pass
+    try:
+        cmd, text = message.text.split()
+        ids_users = get_ids_users_from_db(session)
+        for id_user in ids_users:
+            await bot.send_message(id_user, text)
+    except ValueError:
+        await message.answer('Необходимо указать текст через пробел '
+                             'после команды:'
+                             '\n\n<code>/broadcast *значение*</code>')
