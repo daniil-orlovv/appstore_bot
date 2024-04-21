@@ -1,5 +1,5 @@
 from aiogram.filters import Command
-from aiogram import Router, Dispatcher
+from aiogram import Router
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy import Engine
 from aiogram.filters import StateFilter
@@ -13,11 +13,18 @@ from models.models import App
 from keyboards.keyboards_builder import create_inline_kb
 from states.states import RemoveAppFSM
 from filters.filters import CheckApps
+from filters.permissions import IsAdmin
+from config_data.config import load_config
 
 router = Router()
+config = load_config()
 
 
-@router.message(StateFilter(default_state), Command(commands='add'))
+@router.message(
+        IsAdmin(config),
+        StateFilter(default_state),
+        Command(commands='add')
+)
 async def add(message: Message, session: Engine):
     '''Добавляет URL приложения для мониторинга.'''
 
@@ -38,7 +45,7 @@ async def add(message: Message, session: Engine):
                              '<code>/add url title launch_url</code>')
 
 
-@router.message(StateFilter(default_state), Command('remove'))
+@router.message(IsAdmin(config), StateFilter(default_state), Command('remove'))
 async def remove(message: Message, session: Engine, state: FSMContext):
     '''Удаляет URL приложения для мониторинга.'''
 
@@ -57,7 +64,11 @@ async def remove(message: Message, session: Engine, state: FSMContext):
         await state.clear()
 
 
-@router.callback_query(StateFilter(RemoveAppFSM.choosing_app), CheckApps())
+@router.callback_query(
+        IsAdmin(config),
+        StateFilter(RemoveAppFSM.choosing_app),
+        CheckApps()
+)
 async def accept_remove(
     callback: CallbackQuery,
     session: Engine,
@@ -71,7 +82,7 @@ async def accept_remove(
     await state.clear()
 
 
-@router.message(Command('setinterval'))
+@router.message(IsAdmin(config), Command('setinterval'))
 async def set_interval(message: Message, config):
     '''Устанавливает интервал времени для проверки доступности приложения.'''
 
@@ -86,7 +97,7 @@ async def set_interval(message: Message, config):
                              '\n\n<code>/setinterval *значение*</code>')
 
 
-@router.message(Command('generatekey'))
+@router.message(IsAdmin(config), Command('generatekey'))
 async def generate_key(message: Message, session: Engine):
     '''Генерирует ключ доступа для пользователей.'''
 
@@ -103,7 +114,7 @@ async def generate_key(message: Message, session: Engine):
                              '\n\n<code>/generatekey *значение*</code>')
 
 
-@router.message(Command('broadcast'))
+@router.message(IsAdmin(config), Command('broadcast'))
 async def broadcast(message: Message, session: Engine, bot):
     '''Отправляет сообщение всем пользователям.'''
 
