@@ -8,6 +8,7 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer(), primary_key=True)
+    id_telegram = Column(Integer())
     name = Column(String())
 
 
