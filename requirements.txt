@@ -1,3 +1,4 @@
 aiogram==3.4.1
 sqlalchemy==2.0.29
 alembic==1.13.1
+APScheduler==3.10.4
