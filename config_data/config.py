@@ -12,7 +12,7 @@ class TgBot:
 
 @dataclass
 class CheckingInterval:
-    minutes: int = 1
+    minutes: int
 
 
 @dataclass

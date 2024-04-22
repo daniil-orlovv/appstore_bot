@@ -42,13 +42,24 @@ def get_apps_from_db(session: Engine):
     return names_apps
 
 
+def get_subscribing_apps_of_user(session: Engine, user_id: int):
+
+    id_user = session.query(User).filter(User.id_telegram == user_id).first()
+    q_app = session.query(UserApp).filter(UserApp.user_id == id_user.id)
+    ids_apps = [app.app_id for app in q_app]
+    dict_urls = {}
+    for id in ids_apps:
+        url_app = session.query(App.url).filter(App.id == id).scalar()
+        dict_urls[id] = url_app
+    return dict_urls
+
+
 def create_subscribe_on_app(session: Engine, title: str, user_id: int):
 
     q_app = session.query(App).filter(App.title == title)
     q_user = session.query(User).filter(User.id_telegram == user_id)
     ids_apps = [app.id for app in q_app]
     ids_users = [user.id for user in q_user]
-    print(f'app: {ids_apps} user: {ids_users}')
 
     q_user_app = session.query(UserApp).filter(
         UserApp.app_id == ids_apps[0], UserApp.user_id == ids_users[0])

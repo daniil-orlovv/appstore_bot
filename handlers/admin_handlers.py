@@ -5,6 +5,7 @@ from sqlalchemy import Engine
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from utils.utils_db import (add_app_to_db, add_key_to_db, remove_app_from_db,
                             check_exist_app, check_exist_key,
@@ -14,7 +15,7 @@ from keyboards.keyboards_builder import create_inline_kb
 from states.states import RemoveAppFSM
 from filters.filters import CheckCallbackApp
 from filters.permissions import IsAdmin
-from config_data.config import load_config
+from config_data.config import load_config, Config
 
 router = Router()
 config = load_config()
@@ -83,12 +84,15 @@ async def accept_remove(
 
 
 @router.message(IsAdmin(config), Command('setinterval'))
-async def set_interval(message: Message, config):
+async def set_interval(message: Message, config: Config,
+                       job: AsyncIOScheduler, scheduler: AsyncIOScheduler):
     '''Устанавливает интервал времени для проверки доступности приложения.'''
 
     try:
         cmd, value = message.text.split()
         config.update_interval(value)
+        scheduler.reschedule_job(job.id, trigger='interval', minutes=value)
+
         await message.answer(
             f'Интервал времени для проверки установлен: {value} минут')
     except ValueError:

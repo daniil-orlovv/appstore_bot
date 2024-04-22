@@ -8,7 +8,9 @@ from sqlalchemy import Engine
 
 from utils.utils_db import (check_access_for_user, check_exist_user,
                             add_user_to_db, remove_key_from_db,
-                            get_apps_from_db, create_subscribe_on_app)
+                            get_apps_from_db, create_subscribe_on_app,
+                            get_subscribing_apps_of_user)
+from utils.utils import check_access_apps_subscribe
 from keyboards.keyboards_builder import create_inline_kb
 from states.states import SubscribeAppFSM
 from filters.filters import CheckCallbackApp
@@ -45,10 +47,23 @@ async def start(message: Message, session: Engine):
 
 
 @router.message(Command('status'))
-async def status():
+async def status(message: Message, session: Engine):
     '''Отправляет статус приложений, находящихся под мониторингом.'''
 
-    pass
+    user_id = message.from_user.id
+    dict_urls = get_subscribing_apps_of_user(session, user_id)
+    apps_ok, apps_not_found = await check_access_apps_subscribe(
+        dict_urls, session)
+
+    ok_message = "Доступные приложения:\n\n"
+    for title_app, url in apps_ok.items():
+        ok_message += f"{title_app}: {url}\n\n"
+    await message.answer(ok_message)
+
+    not_found_message = "Недоступные приложения:\n\n"
+    for title_app, url in apps_not_found.items():
+        not_found_message += f"{title_app}: {url}\n\n"
+    await message.answer(not_found_message)
 
 
 @router.message(Command('subscribe'), StateFilter(default_state))

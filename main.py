@@ -18,12 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 def set_scheduled_jobs(scheduler, engine, bot, config):
-    scheduler.add_job(
+    job = scheduler.add_job(
         checking_apps,
         "interval",
         minutes=int(config.interval_value.minutes),
         args=(engine, bot)
     )
+    return job
 
 
 async def main():
@@ -42,14 +43,16 @@ async def main():
         )
         Base.metadata.create_all(engine)
         dp = Dispatcher()
-        dp.workflow_data.update({'db': engine, 'bot': bot, 'config': config})
 
         dp.include_router(admin_handlers.router)
         dp.include_router(user_handlers.router)
 
         dp.update.outer_middleware(DBMiddleware())
 
-        set_scheduled_jobs(scheduler, engine, bot, config)
+        job = set_scheduled_jobs(scheduler, engine, bot, config)
+        dp.workflow_data.update({
+            'db': engine, 'bot': bot, 'config': config, 'job': job,
+            'scheduler': scheduler})
 
         await bot.delete_webhook(drop_pending_updates=True)
         scheduler.start()
