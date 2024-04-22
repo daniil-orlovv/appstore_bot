@@ -91,7 +91,8 @@ async def set_interval(message: Message, config: Config,
     try:
         cmd, value = message.text.split()
         config.update_interval(value)
-        scheduler.reschedule_job(job.id, trigger='interval', minutes=value)
+        scheduler.reschedule_job(
+            job.id, trigger='interval', minutes=int(value))
 
         await message.answer(
             f'Интервал времени для проверки установлен: {value} минут')
