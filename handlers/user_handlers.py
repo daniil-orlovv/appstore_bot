@@ -9,10 +9,10 @@ from sqlalchemy import Engine
 from utils.utils_db import (check_access_for_user, check_exist_user,
                             add_user_to_db, remove_key_from_db,
                             get_apps_from_db, create_subscribe_on_app,
-                            get_subscribing_apps_of_user)
+                            get_subscribing_apps_of_user, return_launch_links)
 from utils.utils import check_access_apps_subscribe
 from keyboards.keyboards_builder import create_inline_kb
-from states.states import SubscribeAppFSM
+from states.states import SubscribeAppFSM, GetLaunchLinkAppFSM
 from filters.filters import CheckCallbackApp
 
 
@@ -100,8 +100,35 @@ async def accept_subscribe(callback: CallbackQuery, session: Engine,
     await state.clear()
 
 
-@router.message(Command('getlaunchlinks'))
-async def get_launch_links():
+@router.message(Command('getlaunchlinks'), StateFilter(default_state))
+async def get_launch_links(message: Message, session: Engine,
+                           state: FSMContext):
     '''Отправляет ссылки для запуска приложения.'''
 
-    pass
+    titles_apps = get_apps_from_db(session)
+    adjust = (2, 2, 2)
+    keyboard = create_inline_kb(adjust, *titles_apps)
+
+    if titles_apps:
+        await message.answer(
+            text='Для какого приложения получить ссылку для запуска?',
+            reply_markup=keyboard)
+        await state.set_state(GetLaunchLinkAppFSM.choosing_app)
+    else:
+        await message.answer('Приложений для мониторинга нет.')
+        await state.clear()
+
+
+@router.callback_query(StateFilter(GetLaunchLinkAppFSM.choosing_app),
+                       CheckCallbackApp())
+async def accept_get_launch_links(callback: CallbackQuery, session: Engine,
+                                  state: FSMContext):
+    '''Создает подписку юзеров на получение уведомлений об изменении статуса
+    конкретного приложения.
+    '''
+
+    title = callback.data
+    url_app = return_launch_links(session, title)
+    await callback.message.edit_text(
+        text=f'Ссылка для запуска {title}: {url_app}')
+    await state.clear()

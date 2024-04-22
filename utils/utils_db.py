@@ -140,3 +140,9 @@ def get_ids_users_from_db(session: Engine):
 
 def check_access_for_user(session: Engine, key: str):
     return session.query(Key).filter(Key.title == key).all()
+
+
+def return_launch_links(session: Engine, title: str):
+
+    url_app = session.query(App.launch_url).filter(App.title == title).scalar()
+    return url_app

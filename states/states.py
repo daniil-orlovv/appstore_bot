@@ -7,3 +7,7 @@ class RemoveAppFSM(StatesGroup):
 
 class SubscribeAppFSM(StatesGroup):
     choosing_app = State()
+
+
+class GetLaunchLinkAppFSM(StatesGroup):
+    choosing_app = State()
