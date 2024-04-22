@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
 
@@ -7,7 +7,7 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = 'users'
-    id = Column(Integer(), primary_key=True)
+    id = Column(Integer, primary_key=True)
     id_telegram = Column(Integer())
     name = Column(String())
 
@@ -25,3 +25,10 @@ class App(Base):
     url = Column(String(), unique=True)
     launch_url = Column(String(), unique=True)
     counter = Column(Integer(), default=0)
+
+
+class UserApp(Base):
+    __tablename__ = 'user_app'
+    id = Column(Integer(), primary_key=True)
+    user_id = Column(Integer(), ForeignKey('users.id'))
+    app_id = Column(Integer(), ForeignKey('apps.id'))

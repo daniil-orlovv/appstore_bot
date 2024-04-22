@@ -1,6 +1,6 @@
 from sqlalchemy import Engine
 
-from models.models import App, Key, User
+from models.models import App, Key, User, UserApp
 
 
 def create_app_obj_for_db(kwargs: dict):
@@ -9,6 +9,15 @@ def create_app_obj_for_db(kwargs: dict):
         title=kwargs['title'],
         url=kwargs['url'],
         launch_url=kwargs['launch_url']
+    )
+    return object_db
+
+
+def create_user_app_obj_for_db(ids_users: int, ids_apps: list):
+
+    object_db = UserApp(
+       user_id=ids_users[0],
+       app_id=ids_apps[0]
     )
     return object_db
 
@@ -25,6 +34,32 @@ def check_exist_app(session: Engine, data: dict) -> bool:
         return False
     else:
         return True
+
+
+def get_apps_from_db(session: Engine):
+    apps = session.query(App.title).all()
+    names_apps = [x[0] for x in apps]
+    return names_apps
+
+
+def create_subscribe_on_app(session: Engine, title: str, user_id: int):
+
+    q_app = session.query(App).filter(App.title == title)
+    q_user = session.query(User).filter(User.id_telegram == user_id)
+    ids_apps = [app.id for app in q_app]
+    ids_users = [user.id for user in q_user]
+    print(f'app: {ids_apps} user: {ids_users}')
+
+    q_user_app = session.query(UserApp).filter(
+        UserApp.app_id == ids_apps[0], UserApp.user_id == ids_users[0])
+
+    if not q_user_app.first():
+        obj_for_db = create_user_app_obj_for_db(ids_users, ids_apps)
+        session.add(obj_for_db)
+        session.commit()
+        return 'Подписка оформлена!'
+    else:
+        return 'Вы уже подписаны на это приложение!'
 
 
 def remove_app_from_db(session: Engine, name_app: str):

@@ -12,7 +12,7 @@ from utils.utils_db import (add_app_to_db, add_key_to_db, remove_app_from_db,
 from models.models import App
 from keyboards.keyboards_builder import create_inline_kb
 from states.states import RemoveAppFSM
-from filters.filters import CheckApps
+from filters.filters import CheckCallbackApp
 from filters.permissions import IsAdmin
 from config_data.config import load_config
 
@@ -67,7 +67,7 @@ async def remove(message: Message, session: Engine, state: FSMContext):
 @router.callback_query(
         IsAdmin(config),
         StateFilter(RemoveAppFSM.choosing_app),
-        CheckApps()
+        CheckCallbackApp()
 )
 async def accept_remove(
     callback: CallbackQuery,

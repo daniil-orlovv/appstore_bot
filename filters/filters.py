@@ -5,7 +5,7 @@ from aiogram.filters import BaseFilter
 from models.models import App
 
 
-class CheckApps(BaseFilter):
+class CheckCallbackApp(BaseFilter):
 
     async def __call__(
             self,

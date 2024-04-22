@@ -1,10 +1,17 @@
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart, Command, StateFilter
+from aiogram.fsm.state import default_state
+from aiogram.fsm.context import FSMContext
 from aiogram import Router
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from sqlalchemy import Engine
 
+
 from utils.utils_db import (check_access_for_user, check_exist_user,
-                            add_user_to_db, remove_key_from_db)
+                            add_user_to_db, remove_key_from_db,
+                            get_apps_from_db, create_subscribe_on_app)
+from keyboards.keyboards_builder import create_inline_kb
+from states.states import SubscribeAppFSM
+from filters.filters import CheckCallbackApp
 
 
 router = Router()
@@ -44,13 +51,38 @@ async def status():
     pass
 
 
-@router.message(Command('subscribe'))
-async def subscribe():
+@router.message(Command('subscribe'), StateFilter(default_state))
+async def subscribe(message: Message, session: Engine, state: FSMContext):
     '''Создает подписку юзеров на получение уведомлений об изменении статуса
     конкретного приложения.
     '''
 
-    pass
+    names_apps = get_apps_from_db(session)
+    adjust = (2, 2, 2)
+    keyboard = create_inline_kb(adjust, *names_apps)
+    if names_apps:
+        await message.answer(
+            text='На какое приложение нужно подписаться?',
+            reply_markup=keyboard)
+        await state.set_state(SubscribeAppFSM.choosing_app)
+    else:
+        await message.answer('Приложений для мониторинга нет.')
+        await state.clear()
+
+
+@router.callback_query(StateFilter(SubscribeAppFSM.choosing_app),
+                       CheckCallbackApp())
+async def accept_subscribe(callback: CallbackQuery, session: Engine,
+                           state: FSMContext):
+    '''Создает подписку юзеров на получение уведомлений об изменении статуса
+    конкретного приложения.
+    '''
+
+    title = callback.data
+    user_id = callback.from_user.id
+    result = create_subscribe_on_app(session, title, user_id)
+    await callback.message.edit_text(text=result)
+    await state.clear()
 
 
 @router.message(Command('getlaunchlinks'))
