@@ -124,7 +124,7 @@ async def broadcast(message: Message, session: Engine, bot):
     '''Отправляет сообщение всем пользователям.'''
 
     try:
-        cmd, text = message.text.split()
+        cmd, text = message.text.split(maxsplit=1)
         ids_users = get_ids_users_from_db(session)
         for id_user in ids_users:
             await bot.send_message(id_user, text)
