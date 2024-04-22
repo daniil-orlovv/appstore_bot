@@ -1,6 +1,8 @@
+from sqlalchemy import Engine
 from aiogram.types import CallbackQuery
 from aiogram.filters import BaseFilter
-from aiogram.fsm.context import FSMContext
+
+from models.models import App
 
 
 class CheckApps(BaseFilter):
@@ -8,8 +10,10 @@ class CheckApps(BaseFilter):
     async def __call__(
             self,
             callback: CallbackQuery,
-            state: FSMContext
+            session: Engine
     ) -> bool:
 
-        state_data = await state.get_data()
-        return callback.data in state_data['names_apps']
+        app = session.query(App).filter(App.title == callback.data).one()
+        if app:
+            return True
+        return False
