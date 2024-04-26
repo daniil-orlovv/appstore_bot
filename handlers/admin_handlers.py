@@ -14,6 +14,9 @@ from config_data.config import Config
 from filters.filters import CheckCallbackApp
 from filters.permissions import IsAdmin
 from keyboards.keyboards_builder import create_inline_kb
+from lexicon.admin_handlers import (lex_accept_remove, lex_add, lex_broadcast,
+                                    lex_generate_key, lex_remove,
+                                    lex_set_interval)
 from models.models import App
 from states.states import RemoveAppFSM
 from utils.utils_db import (add_app_to_db, add_key_to_db, check_exist_app,
@@ -38,17 +41,12 @@ async def add(message: Message, session: Engine):
 
         if check_exist_app(session, data) is True:
             add_app_to_db(session, data)
-            await message.answer(
-                f"Приложение {title} добавлено для мониторинга.")
+            await message.answer(add['message'].format(title))
         else:
-            await message.answer(
-                'Такое приложение уже существует!')
-        logger.debug('Handler "add" has worked.')
+            await message.answer(lex_add['else_messagge'])
+        logger.debug(lex_add['logger_debug'])
     except ValueError:
-        await message.answer('Необходимо указать url, название и ссылку для '
-                             'запуска через пробел после команды: \n\n'
-                             '<code>/add url title launch_url</code>')
-        logger.debug('Пользователь неправильно указал аргументы.')
+        await message.answer(lex_add['value_error'])
 
 
 @router.message(IsAdmin(), StateFilter(default_state), Command('remove'))
@@ -62,13 +60,13 @@ async def remove(message: Message, session: Session, state: FSMContext):
     inline_keyboard = create_inline_kb(adjust, *names_apps)
     if all_apps:
         await message.answer(
-            text='Какое приложение необходимо удалить?',
+            text=lex_remove['message'],
             reply_markup=inline_keyboard)
         await state.set_state(RemoveAppFSM.choosing_app)
     else:
-        await message.answer('Приложений для мониторинга нет.')
+        await message.answer(lex_remove['else_message'])
         await state.clear()
-    logger.debug('Handler "remove" has worked.')
+    logger.debug(lex_remove['logger_debug'])
 
 
 @router.callback_query(
@@ -85,9 +83,10 @@ async def accept_remove(
 
     name_app = callback.data
     remove_app_from_db(session, name_app)
-    await callback.message.edit_text(text=f'Приложение {name_app} удалено!')
+    await callback.message.edit_text(
+        text=lex_accept_remove['message'].format(name_app))
     await state.clear()
-    logger.debug('Handler "accept_remove" has worked.')
+    logger.debug(lex_accept_remove['logger_debug'])
 
 
 @router.message(IsAdmin(), Command('setinterval'))
@@ -101,15 +100,10 @@ async def set_interval(message: Message, config: Config,
         scheduler.reschedule_job(
             job.id, trigger='interval', minutes=int(value))
 
-        await message.answer(
-            f'Интервал времени для проверки установлен: {value} минут')
+        await message.answer(lex_set_interval['message'].fromat(value))
     except ValueError:
-        await message.answer('Необходимо указать значение интервала через '
-                             'пробел после команды в минутах:'
-                             '\n\n<code>/setinterval *значение*</code>')
-        logger.debug(f'Пользователь {message.from_user.id} неправильно указал'
-                     'аргументы для команды /setinterval.')
-    logger.debug('Handler "set_interval" has worked.')
+        await message.answer(lex_set_interval['value_error'])
+    logger.debug(lex_set_interval['logger_debug'])
 
 
 @router.message(IsAdmin(), Command('generatekey'))
@@ -120,16 +114,13 @@ async def generate_key(message: Message, session: Session):
         cmd, key_access = message.text.split()
         if check_exist_key(session, key_access) is True:
             add_key_to_db(session, key_access)
-            await message.answer(f'Ключ доступа создан: {key_access}')
+            await message.answer(
+                lex_generate_key['message'].format(key_access))
         else:
-            await message.answer('Такой ключ уже существует!')
+            await message.answer(lex_generate_key['else_message'])
     except ValueError:
-        await message.answer('Необходимо указать ключ доступа через пробел '
-                             'после команды:'
-                             '\n\n<code>/generatekey *значение*</code>')
-        logger.debug(f'Пользователь {message.from_user.id} неправильно указал'
-                     'аргументы для команды /generatekey.')
-    logger.debug('Handler "generate_key" has worked.')
+        await message.answer(lex_generate_key['value_error'])
+    logger.debug(lex_generate_key['logger_debug'])
 
 
 @router.message(IsAdmin(), Command('broadcast'))
@@ -142,9 +133,5 @@ async def broadcast(message: Message, session: Session, bot: Bot):
         for id_user in ids_users:
             await bot.send_message(id_user, text)
     except ValueError:
-        await message.answer('Необходимо указать текст через пробел '
-                             'после команды:'
-                             '\n\n<code>/broadcast *значение*</code>')
-        logger.debug(f'Пользователь {message.from_user.id} неправильно указал'
-                     'аргументы для команды /broadcast.')
-    logger.debug('Handler "broadcast" has worked.')
+        await message.answer(lex_broadcast['value_error'])
+    logger.debug(lex_broadcast['logger_debug'])

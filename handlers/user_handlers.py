@@ -9,6 +9,9 @@ from sqlalchemy.orm import Session
 
 from filters.filters import CheckCallbackApp
 from keyboards.keyboards_builder import create_inline_kb
+from lexicon.user_handlers import (lex_accept_get_launch_links,
+                                   lex_accept_subscribe, lex_get_launch_links,
+                                   lex_start, lex_status, lex_subscribe)
 from states.states import GetLaunchLinkAppFSM, SubscribeAppFSM
 from utils.utils import check_access_apps_subscribe
 from utils.utils_db import (add_user_to_db, check_access_for_user,
@@ -36,18 +39,13 @@ async def start(message: Message, session: Session):
             data = {'id_telegram': id_telegram, 'name': name}
             if not check_exist_user(session, id_telegram):
                 add_user_to_db(session, data)
-            await message.answer('Доступ получен.')
+            await message.answer(lex_start['message'])
             remove_key_from_db(session, key)
         else:
-            await message.answer('Введен неверный ключ доступа! '
-                                 'Обратитесь к администратору.')
+            await message.answer(lex_start['else_message'])
     except ValueError:
-        await message.answer('Необходимо указать ключ доступа через пробел '
-                             'после команды:'
-                             '\n\n<code>/start *значение*</code>')
-        logger.debug(f'Пользователь {message.from_user.id} неправильно указал'
-                     'аргументы для команды /start.')
-    logger.debug('Handler "start" has worked.')
+        await message.answer(lex_start['value_error'])
+    logger.debug(lex_start['logger_debug'])
 
 
 @router.message(Command('status'))
@@ -59,16 +57,16 @@ async def status(message: Message, session: Session):
     apps_ok, apps_not_found = await check_access_apps_subscribe(
         dict_urls, session)
 
-    ok_message = "Доступные приложения:\n\n"
+    ok_message = lex_status['ok_message']
     for title_app, url in apps_ok.items():
         ok_message += f"{title_app}: {url}\n\n"
     await message.answer(ok_message)
 
-    not_found_message = "Недоступные приложения:\n\n"
+    not_found_message = lex_status['not_found_message']
     for title_app, url in apps_not_found.items():
         not_found_message += f"{title_app}: {url}\n\n"
     await message.answer(not_found_message)
-    logger.debug('Handler "status" has worked.')
+    logger.debug(lex_status['logger_debug'])
 
 
 @router.message(Command('subscribe'), StateFilter(default_state))
@@ -81,13 +79,13 @@ async def subscribe(message: Message, session: Session, state: FSMContext):
     keyboard = create_inline_kb(adjust, *names_apps)
     if names_apps:
         await message.answer(
-            text='На какое приложение нужно подписаться?',
+            text=lex_subscribe['message'],
             reply_markup=keyboard)
         await state.set_state(SubscribeAppFSM.choosing_app)
     else:
-        await message.answer('Приложений для мониторинга нет.')
+        await message.answer(lex_subscribe['else_message'])
         await state.clear()
-    logger.debug('Handler "subscribe" has worked.')
+    logger.debug(lex_subscribe['logger_debug'])
 
 
 @router.callback_query(StateFilter(SubscribeAppFSM.choosing_app),
@@ -102,7 +100,7 @@ async def accept_subscribe(callback: CallbackQuery, session: Session,
     result = create_subscribe_on_app(session, title, user_id)
     await callback.message.edit_text(text=result)
     await state.clear()
-    logger.debug('Handler "accept_subscribe" has worked.')
+    logger.debug(lex_accept_subscribe['logger_debug'])
 
 
 @router.message(Command('getlaunchlinks'), StateFilter(default_state))
@@ -117,13 +115,13 @@ async def get_launch_links(message: Message, session: Session,
 
     if titles_apps:
         await message.answer(
-            text='Для какого приложения получить ссылку для запуска?',
+            text=lex_get_launch_links['message'],
             reply_markup=keyboard)
         await state.set_state(GetLaunchLinkAppFSM.choosing_app)
     else:
-        await message.answer('Приложений для мониторинга нет.')
+        await message.answer(lex_get_launch_links['else_message'])
         await state.clear()
-    logger.debug('Handler "get_launch_links" has worked.')
+    logger.debug(lex_get_launch_links['logger_debug'])
 
 
 @router.callback_query(StateFilter(GetLaunchLinkAppFSM.choosing_app),
@@ -135,6 +133,7 @@ async def accept_get_launch_links(callback: CallbackQuery, session: Session,
     title = callback.data
     url_app = return_launch_links(session, title)
     await callback.message.edit_text(
-        text=f'Ссылка для запуска {title}: {url_app}')
+        text=lex_accept_get_launch_links['message'].format(
+            title=title, url_app=url_app))
     await state.clear()
-    logger.debug('Handler "accept_get_launch_links" has worked.')
+    logger.debug(lex_accept_get_launch_links['logger_debug'])

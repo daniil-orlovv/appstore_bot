@@ -4,6 +4,7 @@ import aiohttp
 from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError
 from sqlalchemy import Engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from models.models import App
@@ -16,21 +17,29 @@ async def check_access_apps_subscribe(dict_urls: dict,
                                       session: Session) -> dict:
     """Проверяет доступность приложений, на которые пользователь подписан."""
 
-    apps_ok = {}
-    apps_not_found = {}
-    for id, url in dict_urls.items():
-        async with aiohttp.ClientSession() as session_http:
-            async with session_http.get(url) as resp:
-                if resp.status == 200:
-                    title_app = session.query(
-                        App.title).filter(App.id == id).scalar()
-                    apps_ok[title_app] = url
-                else:
-                    title_app = session.query(
-                        App.title).filter(App.id == id).scalar()
-                    apps_not_found[title_app] = url
-    logger.debug('func. check_access_apps_subscibe has worked.')
-    return apps_ok, apps_not_found
+    try:
+        apps_ok = {}
+        apps_not_found = {}
+        for id, url in dict_urls.items():
+            async with aiohttp.ClientSession() as session_http:
+                async with session_http.get(url) as resp:
+                    if resp.status == 200:
+                        title_app = session.query(
+                            App.title).filter(App.id == id).scalar()
+                        apps_ok[title_app] = url
+                    else:
+                        title_app = session.query(
+                            App.title).filter(App.id == id).scalar()
+                        apps_not_found[title_app] = url
+        logger.debug('func. check_access_apps_subscibe has worked.')
+        return apps_ok, apps_not_found
+    except aiohttp.ClientError as e:
+        logger.error(f"Ошибка при проверке доступности приложений: {e}")
+        raise
+    except SQLAlchemyError as e:
+        logger.error(
+            f"Ошибка SQLAlchemy при проверке доступности приложений: {e}")
+        raise
 
 
 async def checking_apps(engine: Engine, bot: Bot) -> None:
@@ -62,3 +71,9 @@ async def checking_apps(engine: Engine, bot: Bot) -> None:
         logger.debug('func. checking_apps has worked.')
     except TelegramForbiddenError as e:
         logger.error(f'Пользователь заблокировал бота: {e}', exc_info=True)
+    except aiohttp.ClientError as e:
+        logger.error(f"Ошибка при проверке доступности приложений: {e}")
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Ошибка SQLAlchemy при проверке доступности приложений: {e}")
+        raise
