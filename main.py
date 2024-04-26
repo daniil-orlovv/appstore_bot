@@ -4,8 +4,9 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from apscheduler.job import Job
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.pool import QueuePool
 
 from config_data.config import Config, load_config
@@ -17,7 +18,8 @@ from utils.utils import checking_apps
 logger = logging.getLogger(__name__)
 
 
-def set_scheduled_jobs(scheduler, engine, bot, config):
+def set_scheduled_jobs(scheduler: AsyncIOScheduler, engine: Engine, bot: Bot,
+                       config: Config) -> Job:
     """Устанавливает задачи для планировщика."""
 
     return scheduler.add_job(
@@ -28,7 +30,7 @@ def set_scheduled_jobs(scheduler, engine, bot, config):
     )
 
 
-async def main():
+async def main() -> None:
     """Точка входа в бота."""
 
     try:

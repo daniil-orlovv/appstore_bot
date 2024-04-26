@@ -3,7 +3,7 @@ from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import CallbackQuery, Message
-from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 
 from filters.filters import CheckCallbackApp
 from keyboards.keyboards_builder import create_inline_kb
@@ -18,7 +18,7 @@ router = Router()
 
 
 @router.message(CommandStart())
-async def start(message: Message, session: Engine):
+async def start(message: Message, session: Session):
     """Проверяет ключ пользователя и разрешает/запрещает доступ."""
 
     try:
@@ -45,7 +45,7 @@ async def start(message: Message, session: Engine):
 
 
 @router.message(Command('status'))
-async def status(message: Message, session: Engine):
+async def status(message: Message, session: Session):
     """Отправляет статус приложений, находящихся под мониторингом."""
 
     user_id = message.from_user.id
@@ -65,7 +65,7 @@ async def status(message: Message, session: Engine):
 
 
 @router.message(Command('subscribe'), StateFilter(default_state))
-async def subscribe(message: Message, session: Engine, state: FSMContext):
+async def subscribe(message: Message, session: Session, state: FSMContext):
     """Отправляет список приложений для выбора, чтобы подписаться на выбранное
     приложение."""
 
@@ -84,7 +84,7 @@ async def subscribe(message: Message, session: Engine, state: FSMContext):
 
 @router.callback_query(StateFilter(SubscribeAppFSM.choosing_app),
                        CheckCallbackApp())
-async def accept_subscribe(callback: CallbackQuery, session: Engine,
+async def accept_subscribe(callback: CallbackQuery, session: Session,
                            state: FSMContext):
     """Создает подписку юзеров на получение уведомлений об изменении статуса
     конкретного приложения."""
@@ -97,7 +97,7 @@ async def accept_subscribe(callback: CallbackQuery, session: Engine,
 
 
 @router.message(Command('getlaunchlinks'), StateFilter(default_state))
-async def get_launch_links(message: Message, session: Engine,
+async def get_launch_links(message: Message, session: Session,
                            state: FSMContext):
     """Отправляет список приложений для выбора, чтобы получить ссылку для
     запуска."""
@@ -118,7 +118,7 @@ async def get_launch_links(message: Message, session: Engine,
 
 @router.callback_query(StateFilter(GetLaunchLinkAppFSM.choosing_app),
                        CheckCallbackApp())
-async def accept_get_launch_links(callback: CallbackQuery, session: Engine,
+async def accept_get_launch_links(callback: CallbackQuery, session: Session,
                                   state: FSMContext):
     """Отправляет ссылку для запуска выбранного приложения."""
 

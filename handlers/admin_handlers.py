@@ -1,10 +1,12 @@
-from aiogram import Router
+from aiogram import Bot, Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import CallbackQuery, Message
+from apscheduler.job import Job
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 
 from config_data.config import Config
 from filters.filters import CheckCallbackApp
@@ -45,7 +47,7 @@ async def add(message: Message, session: Engine):
 
 
 @router.message(IsAdmin(), StateFilter(default_state), Command('remove'))
-async def remove(message: Message, session: Engine, state: FSMContext):
+async def remove(message: Message, session: Session, state: FSMContext):
     """Отправляет кнопки с приложениям для удаления."""
 
     all_apps = session.query(App.id, App.title).all()
@@ -70,7 +72,7 @@ async def remove(message: Message, session: Engine, state: FSMContext):
 )
 async def accept_remove(
     callback: CallbackQuery,
-    session: Engine,
+    session: Session,
     state: FSMContext
 ):
     """Удаляет выбранное приложение."""
@@ -83,7 +85,7 @@ async def accept_remove(
 
 @router.message(IsAdmin(), Command('setinterval'))
 async def set_interval(message: Message, config: Config,
-                       job: AsyncIOScheduler, scheduler: AsyncIOScheduler):
+                       job: Job, scheduler: AsyncIOScheduler):
     """Устанавливает интервал времени для проверки доступности приложения."""
 
     try:
@@ -101,7 +103,7 @@ async def set_interval(message: Message, config: Config,
 
 
 @router.message(IsAdmin(), Command('generatekey'))
-async def generate_key(message: Message, session: Engine):
+async def generate_key(message: Message, session: Session):
     """Генерирует ключ доступа для пользователей."""
 
     try:
@@ -118,7 +120,7 @@ async def generate_key(message: Message, session: Engine):
 
 
 @router.message(IsAdmin(), Command('broadcast'))
-async def broadcast(message: Message, session: Engine, bot):
+async def broadcast(message: Message, session: Session, bot: Bot):
     """Отправляет сообщение всем пользователям."""
 
     try:

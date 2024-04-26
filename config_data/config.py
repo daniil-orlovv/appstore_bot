@@ -24,7 +24,7 @@ class Config:
     tg_bot: TgBot
     interval_value: CheckingInterval
 
-    def update_interval(self, new_value: int):
+    def update_interval(self, new_value: int) -> None:
         """Метод класса, обновляющий значение интервала для проверки
         доступности приложений в минутах."""
         self.interval_value.minutes = new_value

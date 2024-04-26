@@ -1,9 +1,10 @@
 import logging
 
 import aiohttp
+from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError
 from sqlalchemy import Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from models.models import App
 from utils.utils_db import get_ids_users_from_db
@@ -11,7 +12,8 @@ from utils.utils_db import get_ids_users_from_db
 logger = logging.getLogger(__name__)
 
 
-async def check_access_apps_subscribe(dict_urls: dict, session: Engine):
+async def check_access_apps_subscribe(dict_urls: dict,
+                                      session: Session) -> dict:
     """Проверяет доступность приложений, на которые пользователь подписан."""
 
     apps_ok = {}
@@ -30,7 +32,7 @@ async def check_access_apps_subscribe(dict_urls: dict, session: Engine):
     return apps_ok, apps_not_found
 
 
-async def checking_apps(engine, bot):
+async def checking_apps(engine: Engine, bot: Bot) -> None:
     """Проверяет доступность всех приложенй."""
 
     Session = sessionmaker(bind=engine)
@@ -49,7 +51,8 @@ async def checking_apps(engine, bot):
                         if app.counter > 3:
                             app.counter = 0
                             ids_users = get_ids_users_from_db(session)
-                            message = (f'Приложение {app.title} недоступно по ссылке')
+                            message = (
+                                f'Приложение {app.title} недоступно по ссылке')
                             for id_user in ids_users:
                                 await bot.send_message(id_user, message)
                         else:
