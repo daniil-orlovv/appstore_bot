@@ -24,6 +24,7 @@ class DBMiddleware(BaseMiddleware):
         Session = sessionmaker(bind=db)
         session = Session(bind=connection)
         data['session'] = session
+        logger.debug('DBMiddleware has worked.')
 
         result = await handler(event, data)
 
