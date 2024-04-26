@@ -12,8 +12,8 @@ from filters.permissions import IsAuth
 from keyboards.keyboards_builder import create_inline_kb, create_kb
 from lexicon.user_handlers import (lex_accept_get_launch_links,
                                    lex_accept_subscribe, lex_any_text,
-                                   lex_get_launch_links, lex_start, lex_status,
-                                   lex_subscribe)
+                                   lex_get_launch_links, lex_help, lex_start,
+                                   lex_status, lex_subscribe)
 from states.states import GetLaunchLinkAppFSM, SubscribeAppFSM
 from utils.utils import check_access_apps_subscribe
 from utils.utils_db import (add_user_to_db, check_access_for_user,
@@ -144,6 +144,14 @@ async def accept_get_launch_links(callback: CallbackQuery, session: Session,
             title=title, url_app=url_app))
     await state.clear()
     logger.debug(lex_accept_get_launch_links['logger_debug'])
+
+
+@router.message(Command('help'))
+async def help(message: Message):
+    """Отправляет список приложений для выбора, чтобы получить ссылку для
+    запуска."""
+
+    await message.answer(lex_help['message'])
 
 
 @router.message()
