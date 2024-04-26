@@ -30,9 +30,7 @@ async def start(message: Message, session: Session):
     try:
         cmd, key = message.text.split()
         if not key:
-            await message.answer('Для доступа к боту необходимо указать ключ, '
-                                 'который необходимо получить у '
-                                 'администратора')
+            await message.answer(lex_start['not_key'])
         if check_access_for_user(session, key):
             id_telegram = message.from_user.id
             name = message.from_user.first_name
