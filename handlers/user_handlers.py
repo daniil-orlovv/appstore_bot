@@ -1,27 +1,25 @@
-from aiogram.filters import CommandStart, Command, StateFilter
-from aiogram.fsm.state import default_state
-from aiogram.fsm.context import FSMContext
 from aiogram import Router
-from aiogram.types import Message, CallbackQuery
+from aiogram.filters import Command, CommandStart, StateFilter
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import default_state
+from aiogram.types import CallbackQuery, Message
 from sqlalchemy import Engine
 
-
-from utils.utils_db import (check_access_for_user, check_exist_user,
-                            add_user_to_db, remove_key_from_db,
-                            get_apps_from_db, create_subscribe_on_app,
-                            get_subscribing_apps_of_user, return_launch_links)
-from utils.utils import check_access_apps_subscribe
-from keyboards.keyboards_builder import create_inline_kb
-from states.states import SubscribeAppFSM, GetLaunchLinkAppFSM
 from filters.filters import CheckCallbackApp
-
+from keyboards.keyboards_builder import create_inline_kb
+from states.states import GetLaunchLinkAppFSM, SubscribeAppFSM
+from utils.utils import check_access_apps_subscribe
+from utils.utils_db import (add_user_to_db, check_access_for_user,
+                            check_exist_user, create_subscribe_on_app,
+                            get_apps_from_db, get_subscribing_apps_of_user,
+                            remove_key_from_db, return_launch_links)
 
 router = Router()
 
 
 @router.message(CommandStart())
 async def start(message: Message, session: Engine):
-    '''Проверяет ключ пользователя и разрешает/запрещает доступ.'''
+    """Проверяет ключ пользователя и разрешает/запрещает доступ."""
 
     try:
         cmd, key = message.text.split()
@@ -48,7 +46,7 @@ async def start(message: Message, session: Engine):
 
 @router.message(Command('status'))
 async def status(message: Message, session: Engine):
-    '''Отправляет статус приложений, находящихся под мониторингом.'''
+    """Отправляет статус приложений, находящихся под мониторингом."""
 
     user_id = message.from_user.id
     dict_urls = get_subscribing_apps_of_user(session, user_id)
@@ -68,9 +66,8 @@ async def status(message: Message, session: Engine):
 
 @router.message(Command('subscribe'), StateFilter(default_state))
 async def subscribe(message: Message, session: Engine, state: FSMContext):
-    '''Создает подписку юзеров на получение уведомлений об изменении статуса
-    конкретного приложения.
-    '''
+    """Отправляет список приложений для выбора, чтобы подписаться на выбранное
+    приложение."""
 
     names_apps = get_apps_from_db(session)
     adjust = (2, 2, 2)
@@ -89,9 +86,8 @@ async def subscribe(message: Message, session: Engine, state: FSMContext):
                        CheckCallbackApp())
 async def accept_subscribe(callback: CallbackQuery, session: Engine,
                            state: FSMContext):
-    '''Создает подписку юзеров на получение уведомлений об изменении статуса
-    конкретного приложения.
-    '''
+    """Создает подписку юзеров на получение уведомлений об изменении статуса
+    конкретного приложения."""
 
     title = callback.data
     user_id = callback.from_user.id
@@ -103,7 +99,8 @@ async def accept_subscribe(callback: CallbackQuery, session: Engine,
 @router.message(Command('getlaunchlinks'), StateFilter(default_state))
 async def get_launch_links(message: Message, session: Engine,
                            state: FSMContext):
-    '''Отправляет ссылки для запуска приложения.'''
+    """Отправляет список приложений для выбора, чтобы получить ссылку для
+    запуска."""
 
     titles_apps = get_apps_from_db(session)
     adjust = (2, 2, 2)
@@ -123,9 +120,7 @@ async def get_launch_links(message: Message, session: Engine,
                        CheckCallbackApp())
 async def accept_get_launch_links(callback: CallbackQuery, session: Engine,
                                   state: FSMContext):
-    '''Создает подписку юзеров на получение уведомлений об изменении статуса
-    конкретного приложения.
-    '''
+    """Отправляет ссылку для запуска выбранного приложения."""
 
     title = callback.data
     url_app = return_launch_links(session, title)

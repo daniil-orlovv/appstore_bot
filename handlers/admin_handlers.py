@@ -1,33 +1,31 @@
-from aiogram.filters import Command
 from aiogram import Router
-from aiogram.types import Message, CallbackQuery
-from sqlalchemy import Engine
-from aiogram.filters import StateFilter
+from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
+from aiogram.types import CallbackQuery, Message
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy import Engine
 
-from utils.utils_db import (add_app_to_db, add_key_to_db, remove_app_from_db,
-                            check_exist_app, check_exist_key,
-                            get_ids_users_from_db)
-from models.models import App
-from keyboards.keyboards_builder import create_inline_kb
-from states.states import RemoveAppFSM
+from config_data.config import Config
 from filters.filters import CheckCallbackApp
 from filters.permissions import IsAdmin
-from config_data.config import load_config, Config
+from keyboards.keyboards_builder import create_inline_kb
+from models.models import App
+from states.states import RemoveAppFSM
+from utils.utils_db import (add_app_to_db, add_key_to_db, check_exist_app,
+                            check_exist_key, get_ids_users_from_db,
+                            remove_app_from_db)
 
 router = Router()
-config = load_config()
 
 
 @router.message(
-        IsAdmin(config),
+        IsAdmin(),
         StateFilter(default_state),
         Command(commands='add')
 )
 async def add(message: Message, session: Engine):
-    '''Добавляет URL приложения для мониторинга.'''
+    """Добавляет URL приложения для мониторинга."""
 
     try:
         url, title, launch_url = message.text.split()[1:]
@@ -46,9 +44,9 @@ async def add(message: Message, session: Engine):
                              '<code>/add url title launch_url</code>')
 
 
-@router.message(IsAdmin(config), StateFilter(default_state), Command('remove'))
+@router.message(IsAdmin(), StateFilter(default_state), Command('remove'))
 async def remove(message: Message, session: Engine, state: FSMContext):
-    '''Удаляет URL приложения для мониторинга.'''
+    """Отправляет кнопки с приложениям для удаления."""
 
     all_apps = session.query(App.id, App.title).all()
     names_apps = [x[-1] for x in all_apps]
@@ -66,7 +64,7 @@ async def remove(message: Message, session: Engine, state: FSMContext):
 
 
 @router.callback_query(
-        IsAdmin(config),
+        IsAdmin(),
         StateFilter(RemoveAppFSM.choosing_app),
         CheckCallbackApp()
 )
@@ -75,7 +73,7 @@ async def accept_remove(
     session: Engine,
     state: FSMContext
 ):
-    '''Подтверждение удаления.'''
+    """Удаляет выбранное приложение."""
 
     name_app = callback.data
     remove_app_from_db(session, name_app)
@@ -83,10 +81,10 @@ async def accept_remove(
     await state.clear()
 
 
-@router.message(IsAdmin(config), Command('setinterval'))
+@router.message(IsAdmin(), Command('setinterval'))
 async def set_interval(message: Message, config: Config,
                        job: AsyncIOScheduler, scheduler: AsyncIOScheduler):
-    '''Устанавливает интервал времени для проверки доступности приложения.'''
+    """Устанавливает интервал времени для проверки доступности приложения."""
 
     try:
         cmd, value = message.text.split()
@@ -102,9 +100,9 @@ async def set_interval(message: Message, config: Config,
                              '\n\n<code>/setinterval *значение*</code>')
 
 
-@router.message(IsAdmin(config), Command('generatekey'))
+@router.message(IsAdmin(), Command('generatekey'))
 async def generate_key(message: Message, session: Engine):
-    '''Генерирует ключ доступа для пользователей.'''
+    """Генерирует ключ доступа для пользователей."""
 
     try:
         cmd, key_access = message.text.split()
@@ -119,9 +117,9 @@ async def generate_key(message: Message, session: Engine):
                              '\n\n<code>/generatekey *значение*</code>')
 
 
-@router.message(IsAdmin(config), Command('broadcast'))
+@router.message(IsAdmin(), Command('broadcast'))
 async def broadcast(message: Message, session: Engine, bot):
-    '''Отправляет сообщение всем пользователям.'''
+    """Отправляет сообщение всем пользователям."""
 
     try:
         cmd, text = message.text.split(maxsplit=1)
