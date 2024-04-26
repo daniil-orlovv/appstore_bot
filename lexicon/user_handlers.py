@@ -35,3 +35,9 @@ lex_accept_get_launch_links = {
     'message': 'Ссылка для запуска {title}: {url_app}',
     'logger_debug': 'Handler "accept_get_launch_links" has worked.'
 }
+
+lex_any_text = {
+    'message': 'Пожалуйста, авторизуйтесь с помощью команды:\n\n /start *ключ*'
+    '\n\nИли введите доступные команды:\n\n/status\n/subscribe\n'
+    '/getlaunchlinks\n\nИли воспользуйтесь командой помощи:\n\n/help'
+}

@@ -1,6 +1,6 @@
 import logging
 
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
@@ -8,10 +8,12 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.orm import Session
 
 from filters.filters import CheckCallbackApp
-from keyboards.keyboards_builder import create_inline_kb
+from filters.permissions import IsAuth
+from keyboards.keyboards_builder import create_inline_kb, create_kb
 from lexicon.user_handlers import (lex_accept_get_launch_links,
-                                   lex_accept_subscribe, lex_get_launch_links,
-                                   lex_start, lex_status, lex_subscribe)
+                                   lex_accept_subscribe, lex_any_text,
+                                   lex_get_launch_links, lex_start, lex_status,
+                                   lex_subscribe)
 from states.states import GetLaunchLinkAppFSM, SubscribeAppFSM
 from utils.utils import check_access_apps_subscribe
 from utils.utils_db import (add_user_to_db, check_access_for_user,
@@ -23,8 +25,8 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-@router.message(CommandStart())
-async def start(message: Message, session: Session):
+@router.message(CommandStart(), StateFilter(default_state))
+async def start(message: Message, session: Session, state: FSMContext):
     """Проверяет ключ пользователя и разрешает/запрещает доступ."""
 
     try:
@@ -35,9 +37,13 @@ async def start(message: Message, session: Session):
             id_telegram = message.from_user.id
             name = message.from_user.first_name
             data = {'id_telegram': id_telegram, 'name': name}
+            buttons = ('Статус приложений', 'Подписаться на приложение',
+                       'Получить ссылку запуска')
+            keyboard = create_kb(*buttons)
             if not check_exist_user(session, id_telegram):
                 add_user_to_db(session, data)
-            await message.answer(lex_start['message'])
+            await message.answer(text=lex_start['message'],
+                                 reply_markup=keyboard)
             remove_key_from_db(session, key)
         else:
             await message.answer(lex_start['else_message'])
@@ -46,7 +52,8 @@ async def start(message: Message, session: Session):
     logger.debug(lex_start['logger_debug'])
 
 
-@router.message(Command('status'))
+@router.message(Command('status'), IsAuth())
+@router.message(F.text == 'Статус приложений', IsAuth())
 async def status(message: Message, session: Session):
     """Отправляет статус приложений, находящихся под мониторингом."""
 
@@ -67,7 +74,8 @@ async def status(message: Message, session: Session):
     logger.debug(lex_status['logger_debug'])
 
 
-@router.message(Command('subscribe'), StateFilter(default_state))
+@router.message(Command('subscribe'), IsAuth())
+@router.message(F.text == 'Подписаться на приложение', IsAuth())
 async def subscribe(message: Message, session: Session, state: FSMContext):
     """Отправляет список приложений для выбора, чтобы подписаться на выбранное
     приложение."""
@@ -87,7 +95,7 @@ async def subscribe(message: Message, session: Session, state: FSMContext):
 
 
 @router.callback_query(StateFilter(SubscribeAppFSM.choosing_app),
-                       CheckCallbackApp())
+                       CheckCallbackApp(), IsAuth())
 async def accept_subscribe(callback: CallbackQuery, session: Session,
                            state: FSMContext):
     """Создает подписку юзеров на получение уведомлений об изменении статуса
@@ -101,7 +109,8 @@ async def accept_subscribe(callback: CallbackQuery, session: Session,
     logger.debug(lex_accept_subscribe['logger_debug'])
 
 
-@router.message(Command('getlaunchlinks'), StateFilter(default_state))
+@router.message(Command('getlaunchlinks'), IsAuth())
+@router.message(F.text == 'Получить ссылку запуска', IsAuth())
 async def get_launch_links(message: Message, session: Session,
                            state: FSMContext):
     """Отправляет список приложений для выбора, чтобы получить ссылку для
@@ -123,7 +132,7 @@ async def get_launch_links(message: Message, session: Session,
 
 
 @router.callback_query(StateFilter(GetLaunchLinkAppFSM.choosing_app),
-                       CheckCallbackApp())
+                       CheckCallbackApp(), IsAuth())
 async def accept_get_launch_links(callback: CallbackQuery, session: Session,
                                   state: FSMContext):
     """Отправляет ссылку для запуска выбранного приложения."""
@@ -135,3 +144,10 @@ async def accept_get_launch_links(callback: CallbackQuery, session: Session,
             title=title, url_app=url_app))
     await state.clear()
     logger.debug(lex_accept_get_launch_links['logger_debug'])
+
+
+@router.message()
+async def any_text(message: Message):
+    """Отправляет сообщение пользователю при командах, неизвстных боту."""
+
+    await message.answer(lex_any_text['message'])

@@ -63,7 +63,8 @@ async def checking_apps(engine: Engine, bot: Bot) -> None:
                             app.counter = 0
                             ids_users = get_ids_users_from_db(session)
                             message = (
-                                lex_checking_apps['message'].format(app.title))
+                                lex_checking_apps['message'].format(
+                                    title=app.title))
                             for id_user in ids_users:
                                 await bot.send_message(id_user, message)
                         else:

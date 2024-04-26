@@ -170,6 +170,16 @@ def get_ids_users_from_db(session: Session) -> list:
     return [user.id_telegram for user in q]
 
 
+def check_user_in_db(session: Session, id_telegram: int):
+    """Проверяет существование объекта модели User в БД."""
+
+    logger.debug('func. check_access_for_user has worked')
+    exist = session.query(User).filter(User.id_telegram == id_telegram).all()
+    if not exist:
+        return False
+    return True
+
+
 def check_access_for_user(session: Session, key: str) -> list[Key]:
     """Проверяет существование объекта модели Key в БД."""
 

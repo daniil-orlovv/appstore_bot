@@ -41,9 +41,9 @@ async def add(message: Message, session: Engine):
 
         if check_exist_app(session, data) is True:
             add_app_to_db(session, data)
-            await message.answer(add['message'].format(title))
+            await message.answer(lex_add['message'].format(title=title))
         else:
-            await message.answer(lex_add['else_messagge'])
+            await message.answer(lex_add['else_message'])
         logger.debug(lex_add['logger_debug'])
     except ValueError:
         await message.answer(lex_add['value_error'])
@@ -84,7 +84,7 @@ async def accept_remove(
     name_app = callback.data
     remove_app_from_db(session, name_app)
     await callback.message.edit_text(
-        text=lex_accept_remove['message'].format(name_app))
+        text=lex_accept_remove['message'].format(name_app=name_app))
     await state.clear()
     logger.debug(lex_accept_remove['logger_debug'])
 
@@ -100,7 +100,7 @@ async def set_interval(message: Message, config: Config,
         scheduler.reschedule_job(
             job.id, trigger='interval', minutes=int(value))
 
-        await message.answer(lex_set_interval['message'].fromat(value))
+        await message.answer(lex_set_interval['message'].format(value=value))
     except ValueError:
         await message.answer(lex_set_interval['value_error'])
     logger.debug(lex_set_interval['logger_debug'])
@@ -115,7 +115,7 @@ async def generate_key(message: Message, session: Session):
         if check_exist_key(session, key_access) is True:
             add_key_to_db(session, key_access)
             await message.answer(
-                lex_generate_key['message'].format(key_access))
+                lex_generate_key['message'].format(key_access=key_access))
         else:
             await message.answer(lex_generate_key['else_message'])
     except ValueError:
