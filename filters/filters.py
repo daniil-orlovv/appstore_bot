@@ -1,8 +1,12 @@
+import logging
+
 from aiogram.filters import BaseFilter
 from aiogram.types import CallbackQuery
 from sqlalchemy import Engine
 
 from models.models import App
+
+logger = logging.getLogger(__name__)
 
 
 class CheckCallbackApp(BaseFilter):
@@ -19,6 +23,7 @@ class CheckCallbackApp(BaseFilter):
         """
 
         app = session.query(App).filter(App.title == callback.data).one()
+        logger.debug('Filter CheckCallbackApp has worked.')
         if app:
             return True
         return False

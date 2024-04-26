@@ -1,8 +1,11 @@
+import logging
 from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 from sqlalchemy.orm import sessionmaker
+
+logger = logging.getLogger(__name__)
 
 
 class DBMiddleware(BaseMiddleware):
@@ -24,4 +27,5 @@ class DBMiddleware(BaseMiddleware):
 
         result = await handler(event, data)
 
+        logger.debug('DBMiddleware has worked.')
         return result

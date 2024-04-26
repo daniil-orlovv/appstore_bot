@@ -16,12 +16,19 @@ from models.models import Base
 from utils.utils import checking_apps
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='[{asctime}] #{levelname:8} {filename}:'
+           '{lineno} - {name} - {message}',
+    style='{'
+)
 
 
 def set_scheduled_jobs(scheduler: AsyncIOScheduler, engine: Engine, bot: Bot,
                        config: Config) -> Job:
     """Устанавливает задачи для планировщика."""
 
+    logger.debug('func. set_scheduled_jobs has worked.')
     return scheduler.add_job(
         checking_apps,
         "interval",
@@ -34,7 +41,7 @@ async def main() -> None:
     """Точка входа в бота."""
 
     try:
-        logger.info('Starting bot')
+        logger.debug('Starting bot...')
         config: Config = load_config()
         scheduler = AsyncIOScheduler()
         bot = Bot(
@@ -62,8 +69,9 @@ async def main() -> None:
         await bot.delete_webhook(drop_pending_updates=True)
         scheduler.start()
         await dp.start_polling(bot)
+        logger.debug('Bot started')
     except Exception as error:
-        logger.error(f'Ошибка в работе программы: {error}')
+        logger.error(f'Ошибка в работе программы: {error}', exc_info=True)
 
 if __name__ == '__main__':
     try:

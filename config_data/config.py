@@ -1,7 +1,11 @@
+import logging
+
 from dataclasses import dataclass
 from typing import Union
 
 from environs import Env
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -28,12 +32,14 @@ class Config:
         """Метод класса, обновляющий значение интервала для проверки
         доступности приложений в минутах."""
         self.interval_value.minutes = new_value
+        logger.debug('func. update_interval has worked.')
 
 
 def load_config(path: Union[str, None] = None) -> Config:
     """Функция для загрузки данных из файла окружения .env."""
     env = Env()
     env.read_env(path)
+    logger.debug('func. load_config has worked.')
     return Config(
         tg_bot=TgBot(
             token=env('BOT_TOKEN'),

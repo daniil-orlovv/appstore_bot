@@ -29,6 +29,7 @@ async def check_access_apps_subscribe(dict_urls: dict,
                     title_app = session.query(
                         App.title).filter(App.id == id).scalar()
                     apps_not_found[title_app] = url
+    logger.debug('func. check_access_apps_subscibe has worked.')
     return apps_ok, apps_not_found
 
 
@@ -58,5 +59,6 @@ async def checking_apps(engine: Engine, bot: Bot) -> None:
                         else:
                             app.counter += 1
         session.commit()
+        logger.debug('func. checking_apps has worked.')
     except TelegramForbiddenError as e:
-        logger.error(f'Пользователь заблокировал бота: {e}')
+        logger.error(f'Пользователь заблокировал бота: {e}', exc_info=True)

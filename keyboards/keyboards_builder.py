@@ -1,5 +1,9 @@
+import logging
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+logger = logging.getLogger(__name__)
 
 
 def create_inline_kb(adjust: list, *args, **kwargs) -> InlineKeyboardMarkup:
@@ -25,4 +29,5 @@ def create_inline_kb(adjust: list, *args, **kwargs) -> InlineKeyboardMarkup:
 
     kb_builder.add(*buttons)
     kb_builder.adjust(*adjust)
+    logger.debug('Inline-keyboard builder has worked.')
     return kb_builder.as_markup(resize_keyboard=True)

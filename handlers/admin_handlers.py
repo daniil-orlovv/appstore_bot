@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import Bot, Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -19,6 +21,7 @@ from utils.utils_db import (add_app_to_db, add_key_to_db, check_exist_app,
                             remove_app_from_db)
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 @router.message(
@@ -40,10 +43,12 @@ async def add(message: Message, session: Engine):
         else:
             await message.answer(
                 'Такое приложение уже существует!')
+        logger.debug('Handler "add" has worked.')
     except ValueError:
         await message.answer('Необходимо указать url, название и ссылку для '
                              'запуска через пробел после команды: \n\n'
                              '<code>/add url title launch_url</code>')
+        logger.debug('Пользователь неправильно указал аргументы.')
 
 
 @router.message(IsAdmin(), StateFilter(default_state), Command('remove'))
@@ -63,6 +68,7 @@ async def remove(message: Message, session: Session, state: FSMContext):
     else:
         await message.answer('Приложений для мониторинга нет.')
         await state.clear()
+    logger.debug('Handler "remove" has worked.')
 
 
 @router.callback_query(
@@ -81,6 +87,7 @@ async def accept_remove(
     remove_app_from_db(session, name_app)
     await callback.message.edit_text(text=f'Приложение {name_app} удалено!')
     await state.clear()
+    logger.debug('Handler "accept_remove" has worked.')
 
 
 @router.message(IsAdmin(), Command('setinterval'))
@@ -100,6 +107,9 @@ async def set_interval(message: Message, config: Config,
         await message.answer('Необходимо указать значение интервала через '
                              'пробел после команды в минутах:'
                              '\n\n<code>/setinterval *значение*</code>')
+        logger.debug(f'Пользователь {message.from_user.id} неправильно указал'
+                     'аргументы для команды /setinterval.')
+    logger.debug('Handler "set_interval" has worked.')
 
 
 @router.message(IsAdmin(), Command('generatekey'))
@@ -117,6 +127,9 @@ async def generate_key(message: Message, session: Session):
         await message.answer('Необходимо указать ключ доступа через пробел '
                              'после команды:'
                              '\n\n<code>/generatekey *значение*</code>')
+        logger.debug(f'Пользователь {message.from_user.id} неправильно указал'
+                     'аргументы для команды /generatekey.')
+    logger.debug('Handler "generate_key" has worked.')
 
 
 @router.message(IsAdmin(), Command('broadcast'))
@@ -132,3 +145,6 @@ async def broadcast(message: Message, session: Session, bot: Bot):
         await message.answer('Необходимо указать текст через пробел '
                              'после команды:'
                              '\n\n<code>/broadcast *значение*</code>')
+        logger.debug(f'Пользователь {message.from_user.id} неправильно указал'
+                     'аргументы для команды /broadcast.')
+    logger.debug('Handler "broadcast" has worked.')

@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import Router
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -15,6 +17,7 @@ from utils.utils_db import (add_user_to_db, check_access_for_user,
                             remove_key_from_db, return_launch_links)
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 @router.message(CommandStart())
@@ -42,6 +45,9 @@ async def start(message: Message, session: Session):
         await message.answer('Необходимо указать ключ доступа через пробел '
                              'после команды:'
                              '\n\n<code>/start *значение*</code>')
+        logger.debug(f'Пользователь {message.from_user.id} неправильно указал'
+                     'аргументы для команды /start.')
+    logger.debug('Handler "start" has worked.')
 
 
 @router.message(Command('status'))
@@ -62,6 +68,7 @@ async def status(message: Message, session: Session):
     for title_app, url in apps_not_found.items():
         not_found_message += f"{title_app}: {url}\n\n"
     await message.answer(not_found_message)
+    logger.debug('Handler "status" has worked.')
 
 
 @router.message(Command('subscribe'), StateFilter(default_state))
@@ -80,6 +87,7 @@ async def subscribe(message: Message, session: Session, state: FSMContext):
     else:
         await message.answer('Приложений для мониторинга нет.')
         await state.clear()
+    logger.debug('Handler "subscribe" has worked.')
 
 
 @router.callback_query(StateFilter(SubscribeAppFSM.choosing_app),
@@ -94,6 +102,7 @@ async def accept_subscribe(callback: CallbackQuery, session: Session,
     result = create_subscribe_on_app(session, title, user_id)
     await callback.message.edit_text(text=result)
     await state.clear()
+    logger.debug('Handler "accept_subscribe" has worked.')
 
 
 @router.message(Command('getlaunchlinks'), StateFilter(default_state))
@@ -114,6 +123,7 @@ async def get_launch_links(message: Message, session: Session,
     else:
         await message.answer('Приложений для мониторинга нет.')
         await state.clear()
+    logger.debug('Handler "get_launch_links" has worked.')
 
 
 @router.callback_query(StateFilter(GetLaunchLinkAppFSM.choosing_app),
@@ -127,3 +137,4 @@ async def accept_get_launch_links(callback: CallbackQuery, session: Session,
     await callback.message.edit_text(
         text=f'Ссылка для запуска {title}: {url_app}')
     await state.clear()
+    logger.debug('Handler "accept_get_launch_links" has worked.')
