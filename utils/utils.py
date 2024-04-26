@@ -7,6 +7,7 @@ from sqlalchemy import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
+from lexicon.utils import lex_checking_apps
 from models.models import App
 from utils.utils_db import get_ids_users_from_db
 
@@ -62,7 +63,7 @@ async def checking_apps(engine: Engine, bot: Bot) -> None:
                             app.counter = 0
                             ids_users = get_ids_users_from_db(session)
                             message = (
-                                f'Приложение {app.title} недоступно по ссылке')
+                                lex_checking_apps['message'].format(app.title))
                             for id_user in ids_users:
                                 await bot.send_message(id_user, message)
                         else:
@@ -75,5 +76,6 @@ async def checking_apps(engine: Engine, bot: Bot) -> None:
         logger.error(f"Ошибка при проверке доступности приложений: {e}")
         raise
     except SQLAlchemyError as e:
-        logger.error(f"Ошибка SQLAlchemy при проверке доступности приложений: {e}")
+        logger.error(
+            f"Ошибка SQLAlchemy при проверке доступности приложений: {e}")
         raise
