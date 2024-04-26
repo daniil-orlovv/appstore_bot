@@ -3,26 +3,22 @@ from sqlalchemy import Engine
 from models.models import App, Key, User, UserApp
 
 
-def create_app_obj_for_db(kwargs: dict):
+def create_app_obj_for_db(kwargs: dict) -> App:
+    """Создает объект модели App для создания в БД."""
 
-    object_db = App(
-        title=kwargs['title'],
-        url=kwargs['url'],
-        launch_url=kwargs['launch_url']
-    )
-    return object_db
+    return App(title=kwargs['title'], url=kwargs['url'],
+               launch_url=kwargs['launch_url'])
 
 
 def create_user_app_obj_for_db(ids_users: int, ids_apps: list):
+    """Создает объект модели UserApp для создания в БД."""
 
-    object_db = UserApp(
-       user_id=ids_users[0],
-       app_id=ids_apps[0]
-    )
-    return object_db
+    return UserApp(user_id=ids_users[0], app_id=ids_apps[0])
 
 
 def check_exist_app(session: Engine, data: dict) -> bool:
+    """Проверяет существование объекта в модели App по аргументам в БД."""
+
     title = data['title']
     url = data['url']
     launch_url = data['launch_url']
@@ -32,17 +28,19 @@ def check_exist_app(session: Engine, data: dict) -> bool:
 
     if check_name or check_url or check_launch_url:
         return False
-    else:
-        return True
+    return True
 
 
 def get_apps_from_db(session: Engine):
+    """Получает имена приложений из модели App в БД."""
+
     apps = session.query(App.title).all()
-    names_apps = [x[0] for x in apps]
-    return names_apps
+    return [x[0] for x in apps]
 
 
 def get_subscribing_apps_of_user(session: Engine, user_id: int):
+    """Получает урлы приложений из модели App, на которые подписан
+    пользователь."""
 
     id_user = session.query(User).filter(User.id_telegram == user_id).first()
     q_app = session.query(UserApp).filter(UserApp.user_id == id_user.id)
@@ -55,6 +53,7 @@ def get_subscribing_apps_of_user(session: Engine, user_id: int):
 
 
 def create_subscribe_on_app(session: Engine, title: str, user_id: int):
+    """Создает подписку пользователя на приложение(Создает объект UserApp)."""
 
     q_app = session.query(App).filter(App.title == title)
     q_user = session.query(User).filter(User.id_telegram == user_id)
@@ -69,57 +68,64 @@ def create_subscribe_on_app(session: Engine, title: str, user_id: int):
         session.add(obj_for_db)
         session.commit()
         return 'Подписка оформлена!'
-    else:
-        return 'Вы уже подписаны на это приложение!'
+    return 'Вы уже подписаны на это приложение!'
 
 
 def remove_app_from_db(session: Engine, name_app: str):
+    """Удаляет объект модели App из БД."""
+
     app = session.query(App).filter(App.title == name_app).one()
     session.delete(app)
     session.commit()
 
 
 def add_app_to_db(session: Engine, data: dict):
+    """Добавляет объект модели App в БД."""
+
     object_for_db = create_app_obj_for_db(data)
     session.add(object_for_db)
     session.commit()
 
 
 def create_key_obj_for_db(key: str):
+    """Создает объект Key в БД."""
 
-    object_db = Key(
-        title=key
-    )
-    return object_db
+    return Key(title=key)
 
 
 def check_exist_key(session: Engine, data: dict):
+    """Проверяет существование объекта модели Key в БД по аргументам."""
+
     title = data
     check_key = session.query(Key).filter(Key.title == title).all()
     return False if check_key else True
 
 
 def add_key_to_db(session: Engine, key: str):
+    """Добавляет объект модели Key."""
+
     object_for_db = create_key_obj_for_db(key)
     session.add(object_for_db)
     session.commit()
 
 
 def remove_key_from_db(session: Engine, key: str):
+    """Удаляет объект модели Key из БД."""
+
     key_for_deleting = session.query(Key).filter(Key.title == key).one()
     session.delete(key_for_deleting)
     session.commit()
 
 
 def create_user_object_for_db(data: dict):
-    object_db = User(
-        id_telegram=data['id_telegram'],
-        name=data['name']
-    )
-    return object_db
+    """Создает объект модели User в БД."""
+
+    return User(id_telegram=data['id_telegram'], name=data['name'])
 
 
 def check_exist_user(session: Engine, id_telegram: int):
+    """Проверяет существование объекта модели User в БД."""
+
     users = session.query(User).filter(User.id_telegram == id_telegram).all()
     if users:
         return True
@@ -127,22 +133,27 @@ def check_exist_user(session: Engine, id_telegram: int):
 
 
 def add_user_to_db(session: Engine, data: dict):
+    """Добавляет объект модели User в БД."""
+
     object_for_db = create_user_object_for_db(data)
     session.add(object_for_db)
     session.commit()
 
 
 def get_ids_users_from_db(session: Engine):
+    """Получает id-s объектов из модели User."""
+
     q = session.query(User)
-    ids_users = [user.id_telegram for user in q]
-    return ids_users
+    return [user.id_telegram for user in q]
 
 
 def check_access_for_user(session: Engine, key: str):
+    """Проверяет существование объекта модели Key в БД."""
+
     return session.query(Key).filter(Key.title == key).all()
 
 
 def return_launch_links(session: Engine, title: str):
+    """Возвращает ссылки запуска объекта модели App в БД."""
 
-    url_app = session.query(App.launch_url).filter(App.title == title).scalar()
-    return url_app
+    return session.query(App.launch_url).filter(App.title == title).scalar()

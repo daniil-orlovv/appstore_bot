@@ -1,11 +1,13 @@
 from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
-from sqlalchemy.orm import sessionmaker
 from aiogram.types import TelegramObject
+from sqlalchemy.orm import sessionmaker
 
 
 class DBMiddleware(BaseMiddleware):
+    """Класс-мидлваррь, получающий соединение с БД до попадания в фильтры и
+    передающий это соединение в хэндлеры."""
     async def __call__(
         self,
         handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
@@ -21,9 +23,5 @@ class DBMiddleware(BaseMiddleware):
         data['session'] = session
 
         result = await handler(event, data)
-
-        # ...
-        # Здесь выполняется код на выходе из middleware
-        # ...
 
         return result

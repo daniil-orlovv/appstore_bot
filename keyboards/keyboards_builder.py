@@ -3,6 +3,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 def create_inline_kb(adjust: list, *args, **kwargs) -> InlineKeyboardMarkup:
+    """Создает инлайн-клавиатуру, принимая аргументы для названия и коллбэка
+    кнопок."""
     kb_builder = InlineKeyboardBuilder()
     buttons: list[InlineKeyboardButton] = []
 

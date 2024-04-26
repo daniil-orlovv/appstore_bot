@@ -1,11 +1,11 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-
 
 Base = declarative_base()
 
 
 class User(Base):
+    """Класс определяющий структуру таблицы users в базе данных."""
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
     id_telegram = Column(Integer())
@@ -13,12 +13,14 @@ class User(Base):
 
 
 class Key(Base):
+    """Класс определяющий структуру таблицы keys в базе данных."""
     __tablename__ = 'keys'
     id = Column(Integer(), primary_key=True)
     title = Column(String())
 
 
 class App(Base):
+    """Класс определяющий структуру таблицы apps в базе данных."""
     __tablename__ = 'apps'
     id = Column(Integer, primary_key=True)
     title = Column(String(), unique=True)
@@ -28,7 +30,8 @@ class App(Base):
 
 
 class UserApp(Base):
+    """Класс определяющий структуру таблицы user_app в базе данных."""
     __tablename__ = 'user_app'
     id = Column(Integer(), primary_key=True)
-    user_id = Column(Integer(), ForeignKey('users.id'))
-    app_id = Column(Integer(), ForeignKey('apps.id'))
+    user_id = Column(Integer(), ForeignKey('users.id', ondelete="CASCADE"))
+    app_id = Column(Integer(), ForeignKey('apps.id', ondelete="CASCADE"))
