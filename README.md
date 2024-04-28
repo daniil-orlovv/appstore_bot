@@ -203,3 +203,6 @@ Telegram-бот, осуществляющий мониторинг доступ�
 - environs
 - python-dotenv
 - logging
+- docker
+- docker-compose
+- Ubuntu 22.04 LTS
