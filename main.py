@@ -48,7 +48,7 @@ async def main() -> None:
             token=config.tg_bot.token,
             default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         engine = create_engine(
-            'sqlite:///sqlite3.db',
+            'sqlite:///data/sqlite3.db',
             poolclass=QueuePool,
             pool_size=5,
             max_overflow=10

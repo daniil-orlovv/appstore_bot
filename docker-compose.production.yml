@@ -1,0 +1,11 @@
+version: '3'
+
+volumes:
+  sqlite:
+
+services:
+  bot:
+    image: daniilorlovv/appstore_bot
+    env_file: .env
+    volumes:
+      - sqlite:/data/
